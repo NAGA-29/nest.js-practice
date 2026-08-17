@@ -17,7 +17,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: { id: string; username: string }): Promise<User> {
     // NOTE: ファンクション名はvalidateでなければならない
     const { id, username } = payload;
-    const user = await this.userRepository.findOne({ id, username }); // トークンのペイロードからユーザーを取得
+    const user = await this.userRepository.findOne({
+      where: { id, username },
+    }); // トークンのペイロードからユーザーを取得
 
     if (user) {
       return user;
