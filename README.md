@@ -4,15 +4,35 @@ NestJS APIとReact SPAを同じリポジトリで管理する、pnpm workspace�
 
 ## 必要な環境
 
-- Node.js 20.19以上
-- pnpm 10以上
-- PostgreSQL（既存の商品・認証APIを起動する場合）
+- Docker Engine / Docker Compose（推奨）
+- Node.js 20.19以上、pnpm 10以上（Dockerを使わず実行する場合）
 
 ## セットアップ
 
 ```bash
 pnpm install
 ```
+
+## Docker Composeで起動する
+
+NestJS API、PostgreSQL、Redisをまとめて起動できます。
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+PostgreSQLとRedisのヘルスチェックが成功してからAPIが起動します。起動後は次のURL・ポートを利用できます。
+
+| サービス   | 接続先                            |
+| ---------- | --------------------------------- |
+| NestJS API | `http://localhost:3000`           |
+| PostgreSQL | `localhost:5432`（DB名: `todos`） |
+| Redis      | `redis://localhost:6379`          |
+
+APIコンテナはソースをバインドマウントし、NestJSのwatchモードで動作します。停止する場合は`docker compose down`、データボリュームも削除して初期化する場合は`docker compose down --volumes`を実行してください。
+
+ポートや開発用DB認証情報は`.env`で上書きできます。利用可能な変数は`.env.example`を参照してください。`.env`はGit管理対象外です。
 
 ## アプリケーション
 
@@ -21,7 +41,7 @@ pnpm install
 | `apps/api` | NestJS 11       | `pnpm dev:api` | `http://localhost:3000` |
 | `apps/web` | React 19 + Vite | `pnpm dev:web` | `http://localhost:5173` |
 
-WebからAPIへのアクセスを許可するオリジンは、APIの`WEB_ORIGIN`環境変数で変更できます。デフォルトは`http://localhost:5173`です。
+WebからAPIへのアクセスを許可するオリジンは、APIの`WEB_ORIGIN`環境変数で変更できます。デフォルトは`http://localhost:5173`です。APIは`POSTGRES_*`環境変数でPostgreSQLへ接続し、`REDIS_HOST`と`REDIS_PORT`でRedisへ接続します。
 
 ## ディレクトリ構成
 
@@ -59,4 +79,4 @@ pnpm format:check  # Prettierの確認
 
 ## TypeORM
 
-既存APIはPostgreSQLを使用します。接続設定とマイグレーション設定は`apps/api/ormconfig.js`にあります。本番環境では、認証情報を環境変数または秘密情報管理サービスへ移してください。
+既存APIはPostgreSQLを使用します。アプリケーションの接続設定は`apps/api/src/infrastructure/config/database.config.ts`、CLI向けのマイグレーション設定は`apps/api/ormconfig.js`にあり、どちらも環境変数から接続情報を取得します。Redisクライアントは`apps/api/src/infrastructure/redis`で管理し、NestJSの起動・停止に合わせて接続・切断します。本番環境では、認証情報を秘密情報管理サービスから環境変数へ渡してください。
